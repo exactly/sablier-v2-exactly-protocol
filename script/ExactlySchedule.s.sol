@@ -20,14 +20,12 @@ contract ExactlyScheduleScript is BaseScript {
     Broker public broker = Broker({ account: address(0), fee: ud60x18(0) });
 
     function run() public virtual broadcast returns (uint256[] memory streamIds) {
-        streamIds = new uint256[](17);
-        LockupDynamic.CreateWithMilestones[] memory usersParams = new LockupDynamic.CreateWithMilestones[](17);
-        usersParams = getUsersParams();
+        LockupDynamic.CreateWithMilestones[] memory usersParams = getUsersParams();
+        streamIds = new uint256[](usersParams.length);
 
         EXA.approve(address(SABLIER_LOCKUP_DYNAMIC), AGGREGATE_AMOUNT);
 
-        for (uint256 i = 0; i < 17; ++i) {
-            usersParams = getUsersParams();
+        for (uint256 i = 0; i < usersParams.length; ++i) {
             streamIds[i] = SABLIER_LOCKUP_DYNAMIC.createWithMilestones(usersParams[i]);
         }
     }
