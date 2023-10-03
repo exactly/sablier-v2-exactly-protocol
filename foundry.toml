@@ -12,6 +12,7 @@
   out = "out"
   script = "script"
   solc = "0.8.19"
+  fs_permissions = [{ access = "write", path = "out" }]
 
 [fmt]
   bracket_spacing = true

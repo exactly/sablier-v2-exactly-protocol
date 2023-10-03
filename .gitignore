@@ -3,6 +3,7 @@ cache
 node_modules
 out
 *__pycache__
+.mypy_cache
 
 # files
 *.env
@@ -11,6 +12,7 @@ out
 .pnp.*
 lcov.info
 yarn.lock
+poetry.lock
 
 # broadcasts
 !broadcast
