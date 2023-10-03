@@ -6,8 +6,12 @@ import { Broker, LockupDynamic } from "@sablier/v2-core/src/types/DataTypes.sol"
 import { ud2x18, ud60x18 } from "@sablier/v2-core/src/types/Math.sol";
 import { IERC20 } from "@sablier/v2-core/src/types/Tokens.sol";
 import { BaseScript } from "@sablier/v2-core-script/Base.s.sol";
+import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 
 contract ExactlyScheduleScript is BaseScript {
+    using Strings for uint128;
+    using Strings for uint40;
+
     IERC20 public constant EXA = IERC20(0x1e925De1c68ef83bD98eE3E130eF14a50309C01B);
     // https://docs.exact.ly/security/access-control
     address public constant EXACTLY_PROTOCOL_OWNER = 0xC0d6Bc5d052d1e74523AD79dD5A954276c9286D3;
@@ -18,6 +22,29 @@ contract ExactlyScheduleScript is BaseScript {
         ISablierV2LockupDynamic(0x6f68516c21E248cdDfaf4898e66b2b0Adee0e0d6);
 
     Broker public broker = Broker({ account: address(0), fee: ud60x18(0) });
+
+    string public constant CSV_DIR = "out/streams/";
+    string private _csv;
+
+    modifier csv(string memory name) {
+        _csv = string.concat(CSV_DIR, name, ".csv");
+        try vm.removeFile(_csv) { } catch { }
+        vm.writeLine(_csv, "amount,milestone");
+        _;
+        delete _csv;
+    }
+
+    function setUp() external {
+        vm.createSelectFork("optimism", 110_381_818);
+        vm.label(address(SABLIER_LOCKUP_DYNAMIC), "SablierV2LockupDynamic");
+        vm.label(EXACTLY_PROTOCOL_OWNER, "multisig");
+        vm.label(address(EXA), "EXA");
+        vm.label(
+            address(uint160(uint256(vm.load(address(EXA), bytes32(uint256(keccak256("eip1967.proxy.implementation")) - 1))))),
+            "EXAImpl"
+        );
+        vm.createDir(CSV_DIR, true);
+    }
 
     function run() public virtual broadcast returns (uint256[] memory streamIds) {
         LockupDynamic.CreateWithMilestones[] memory usersParams = getUsersParams();
@@ -30,7 +57,7 @@ contract ExactlyScheduleScript is BaseScript {
         }
     }
 
-    function getUsersParams() public view returns (LockupDynamic.CreateWithMilestones[] memory) {
+    function getUsersParams() public returns (LockupDynamic.CreateWithMilestones[] memory) {
         LockupDynamic.CreateWithMilestones[] memory usersParams = new LockupDynamic.CreateWithMilestones[](17);
         usersParams[0] = getParamsForUser1();
         usersParams[1] = getParamsForUser2();
@@ -52,13 +79,22 @@ contract ExactlyScheduleScript is BaseScript {
         return usersParams;
     }
 
-    function getSegment(uint128 amount, uint40 milestone) public pure returns (LockupDynamic.Segment memory) {
+    function format(string calldata str) external pure returns (string memory) {
+        return string.concat(str[:bytes(str).length - 18], ".", str[bytes(str).length - 18:]);
+    }
+
+    function getSegment(uint128 amount, uint40 milestone) public returns (LockupDynamic.Segment memory) {
+        vm.writeLine(_csv, string.concat(this.format(amount.toString()), ",", milestone.toString()));
         LockupDynamic.Segment memory segment =
             LockupDynamic.Segment({ amount: amount, milestone: milestone, exponent: ud2x18(1) });
         return segment;
     }
 
-    function getParamsForUser1() public view returns (LockupDynamic.CreateWithMilestones memory) {
+    function getParamsForUser1()
+        public
+        csv("1-0x669265141b4561528D27caC09282CE928A4896fa")
+        returns (LockupDynamic.CreateWithMilestones memory)
+    {
         return LockupDynamic.CreateWithMilestones({
             asset: EXA,
             broker: broker,
@@ -71,7 +107,11 @@ contract ExactlyScheduleScript is BaseScript {
         });
     }
 
-    function getParamsForUser2() public view returns (LockupDynamic.CreateWithMilestones memory) {
+    function getParamsForUser2()
+        public
+        csv("2-0xE72185a9f4Ce3500d6dC7CCDCfC64cf66D823bE8")
+        returns (LockupDynamic.CreateWithMilestones memory)
+    {
         return LockupDynamic.CreateWithMilestones({
             asset: EXA,
             broker: broker,
@@ -84,7 +124,11 @@ contract ExactlyScheduleScript is BaseScript {
         });
     }
 
-    function getParamsForUser3() public view returns (LockupDynamic.CreateWithMilestones memory) {
+    function getParamsForUser3()
+        public
+        csv("3-0xE72185a9f4Ce3500d6dC7CCDCfC64cf66D823bE8")
+        returns (LockupDynamic.CreateWithMilestones memory)
+    {
         return LockupDynamic.CreateWithMilestones({
             asset: EXA,
             broker: broker,
@@ -97,7 +141,11 @@ contract ExactlyScheduleScript is BaseScript {
         });
     }
 
-    function getParamsForUser4() public view returns (LockupDynamic.CreateWithMilestones memory) {
+    function getParamsForUser4()
+        public
+        csv("4-0xcd25c40dCfB47f6eE3112734393D25c9e21A3AA7")
+        returns (LockupDynamic.CreateWithMilestones memory)
+    {
         return LockupDynamic.CreateWithMilestones({
             asset: EXA,
             broker: broker,
@@ -110,7 +158,11 @@ contract ExactlyScheduleScript is BaseScript {
         });
     }
 
-    function getParamsForUser5() public view returns (LockupDynamic.CreateWithMilestones memory) {
+    function getParamsForUser5()
+        public
+        csv("5-0xcd25c40dCfB47f6eE3112734393D25c9e21A3AA7")
+        returns (LockupDynamic.CreateWithMilestones memory)
+    {
         return LockupDynamic.CreateWithMilestones({
             asset: EXA,
             broker: broker,
@@ -123,7 +175,11 @@ contract ExactlyScheduleScript is BaseScript {
         });
     }
 
-    function getParamsForUser6() public view returns (LockupDynamic.CreateWithMilestones memory) {
+    function getParamsForUser6()
+        public
+        csv("6-0x652afcD1EB1A90A622dC4033eE7630BdD3ad3E51")
+        returns (LockupDynamic.CreateWithMilestones memory)
+    {
         return LockupDynamic.CreateWithMilestones({
             asset: EXA,
             broker: broker,
@@ -136,7 +192,11 @@ contract ExactlyScheduleScript is BaseScript {
         });
     }
 
-    function getParamsForUser7() public view returns (LockupDynamic.CreateWithMilestones memory) {
+    function getParamsForUser7()
+        public
+        csv("7-0xCa81a029aCa50Fa3e25Ea2f26E10152d903fB4B5")
+        returns (LockupDynamic.CreateWithMilestones memory)
+    {
         return LockupDynamic.CreateWithMilestones({
             asset: EXA,
             broker: broker,
@@ -149,7 +209,11 @@ contract ExactlyScheduleScript is BaseScript {
         });
     }
 
-    function getParamsForUser8() public view returns (LockupDynamic.CreateWithMilestones memory) {
+    function getParamsForUser8()
+        public
+        csv("8-0xF891855Ddb613A9D56b6EAeA7495950B374181e2")
+        returns (LockupDynamic.CreateWithMilestones memory)
+    {
         return LockupDynamic.CreateWithMilestones({
             asset: EXA,
             broker: broker,
@@ -162,7 +226,11 @@ contract ExactlyScheduleScript is BaseScript {
         });
     }
 
-    function getParamsForUser9() public view returns (LockupDynamic.CreateWithMilestones memory) {
+    function getParamsForUser9()
+        public
+        csv("9-0x7d5Ff8caE8eF8d15357Cfd4A291E830C0F875F1B")
+        returns (LockupDynamic.CreateWithMilestones memory)
+    {
         return LockupDynamic.CreateWithMilestones({
             asset: EXA,
             broker: broker,
@@ -175,7 +243,11 @@ contract ExactlyScheduleScript is BaseScript {
         });
     }
 
-    function getParamsForUser10() public view returns (LockupDynamic.CreateWithMilestones memory) {
+    function getParamsForUser10()
+        public
+        csv("10-0x3A0B303FF6B7250ddb659AdD318c8e74f3e8104d")
+        returns (LockupDynamic.CreateWithMilestones memory)
+    {
         return LockupDynamic.CreateWithMilestones({
             asset: EXA,
             broker: broker,
@@ -188,7 +260,11 @@ contract ExactlyScheduleScript is BaseScript {
         });
     }
 
-    function getParamsForUser11() public view returns (LockupDynamic.CreateWithMilestones memory) {
+    function getParamsForUser11()
+        public
+        csv("11-0x4073F392794218FA3195cce45eaaC9A77066c640")
+        returns (LockupDynamic.CreateWithMilestones memory)
+    {
         return LockupDynamic.CreateWithMilestones({
             asset: EXA,
             broker: broker,
@@ -201,7 +277,11 @@ contract ExactlyScheduleScript is BaseScript {
         });
     }
 
-    function getParamsForUser12() public view returns (LockupDynamic.CreateWithMilestones memory) {
+    function getParamsForUser12()
+        public
+        csv("12-0xFB1E9918FBA266797e1191597b64ED6Be1EE2728")
+        returns (LockupDynamic.CreateWithMilestones memory)
+    {
         return LockupDynamic.CreateWithMilestones({
             asset: EXA,
             broker: broker,
@@ -214,7 +294,11 @@ contract ExactlyScheduleScript is BaseScript {
         });
     }
 
-    function getParamsForUser13() public view returns (LockupDynamic.CreateWithMilestones memory) {
+    function getParamsForUser13()
+        public
+        csv("13-0x7b7048820FB71Db6F086c5365E2948ce39E73304")
+        returns (LockupDynamic.CreateWithMilestones memory)
+    {
         return LockupDynamic.CreateWithMilestones({
             asset: EXA,
             broker: broker,
@@ -227,7 +311,11 @@ contract ExactlyScheduleScript is BaseScript {
         });
     }
 
-    function getParamsForUser14() public view returns (LockupDynamic.CreateWithMilestones memory) {
+    function getParamsForUser14()
+        public
+        csv("14-0xD754d49Ce331669C4f15B5e1b8E72D2d9Fc51B28")
+        returns (LockupDynamic.CreateWithMilestones memory)
+    {
         return LockupDynamic.CreateWithMilestones({
             asset: EXA,
             broker: broker,
@@ -240,7 +328,11 @@ contract ExactlyScheduleScript is BaseScript {
         });
     }
 
-    function getParamsForUser15() public view returns (LockupDynamic.CreateWithMilestones memory) {
+    function getParamsForUser15()
+        public
+        csv("15-0xd3819BEd61861d281d45E79988f95d4371D25e2c")
+        returns (LockupDynamic.CreateWithMilestones memory)
+    {
         return LockupDynamic.CreateWithMilestones({
             asset: EXA,
             broker: broker,
@@ -253,7 +345,11 @@ contract ExactlyScheduleScript is BaseScript {
         });
     }
 
-    function getParamsForUser16() public view returns (LockupDynamic.CreateWithMilestones memory) {
+    function getParamsForUser16()
+        public
+        csv("16-0x86C614FD180855f35160eD34552Ad4E99b8A2B52")
+        returns (LockupDynamic.CreateWithMilestones memory)
+    {
         return LockupDynamic.CreateWithMilestones({
             asset: EXA,
             broker: broker,
@@ -266,7 +362,11 @@ contract ExactlyScheduleScript is BaseScript {
         });
     }
 
-    function getParamsForUser17() public view returns (LockupDynamic.CreateWithMilestones memory) {
+    function getParamsForUser17()
+        public
+        csv("17-0x997137e1c2A1A8A78CE2D17796b870eFbC7572D2")
+        returns (LockupDynamic.CreateWithMilestones memory)
+    {
         return LockupDynamic.CreateWithMilestones({
             asset: EXA,
             broker: broker,
@@ -279,7 +379,7 @@ contract ExactlyScheduleScript is BaseScript {
         });
     }
 
-    function getSegmentsForUser1() public pure returns (LockupDynamic.Segment[] memory) {
+    function getSegmentsForUser1() public returns (LockupDynamic.Segment[] memory) {
         LockupDynamic.Segment[] memory segments = new LockupDynamic.Segment[](36);
         segments[0] = getSegment({ amount: 3039e18, milestone: 1_706_745_600 }); // February 01, 2024 at 00:00:00 UTC
         segments[1] = getSegment({ amount: 3262e18, milestone: 1_709_251_200 }); // March 01, 2024 at 00:00:00 UTC
@@ -320,7 +420,7 @@ contract ExactlyScheduleScript is BaseScript {
         return segments;
     }
 
-    function getSegmentsForUser2() public pure returns (LockupDynamic.Segment[] memory) {
+    function getSegmentsForUser2() public returns (LockupDynamic.Segment[] memory) {
         LockupDynamic.Segment[] memory segments = new LockupDynamic.Segment[](36);
         segments[0] = getSegment({ amount: 2007e18, milestone: 1_706_745_600 }); // February 01, 2024 at 00:00:00 UTC
         segments[1] = getSegment({ amount: 2173e18, milestone: 1_709_251_200 }); // March 01, 2024 at 00:00:00 UTC
@@ -361,7 +461,7 @@ contract ExactlyScheduleScript is BaseScript {
         return segments;
     }
 
-    function getSegmentsForUser3() public pure returns (LockupDynamic.Segment[] memory) {
+    function getSegmentsForUser3() public returns (LockupDynamic.Segment[] memory) {
         LockupDynamic.Segment[] memory segments = new LockupDynamic.Segment[](37);
         segments[0] = getSegment({ amount: 237e18, milestone: 1_717_200_000 }); // June 01, 2024 at 00:00:00 UTC
         segments[1] = getSegment({ amount: 275e18, milestone: 1_719_792_000 }); // July 01, 2024 at 00:00:00 UTC
@@ -403,7 +503,7 @@ contract ExactlyScheduleScript is BaseScript {
         return segments;
     }
 
-    function getSegmentsForUser4() public pure returns (LockupDynamic.Segment[] memory) {
+    function getSegmentsForUser4() public returns (LockupDynamic.Segment[] memory) {
         LockupDynamic.Segment[] memory segments = new LockupDynamic.Segment[](36);
         segments[0] = getSegment({ amount: 234e18, milestone: 1_706_745_600 }); // February 01, 2024 at 00:00:00 UTC
         segments[1] = getSegment({ amount: 254e18, milestone: 1_709_251_200 }); // March 01, 2024 at 00:00:00 UTC
@@ -444,7 +544,7 @@ contract ExactlyScheduleScript is BaseScript {
         return segments;
     }
 
-    function getSegmentsForUser5() public pure returns (LockupDynamic.Segment[] memory) {
+    function getSegmentsForUser5() public returns (LockupDynamic.Segment[] memory) {
         LockupDynamic.Segment[] memory segments = new LockupDynamic.Segment[](37);
         segments[0] = getSegment({ amount: 43e18, milestone: 1_717_200_000 }); // June 01, 2024 at 00:00:00 UTC
         segments[1] = getSegment({ amount: 50e18, milestone: 1_719_792_000 }); // July 01, 2024 at 00:00:00 UTC
@@ -486,7 +586,7 @@ contract ExactlyScheduleScript is BaseScript {
         return segments;
     }
 
-    function getSegmentsForUser6() public pure returns (LockupDynamic.Segment[] memory) {
+    function getSegmentsForUser6() public returns (LockupDynamic.Segment[] memory) {
         LockupDynamic.Segment[] memory segments = new LockupDynamic.Segment[](36);
         segments[0] = getSegment({ amount: 450e18, milestone: 1_706_745_600 }); // February 01, 2024 at 00:00:00 UTC
         segments[1] = getSegment({ amount: 492e18, milestone: 1_709_251_200 }); // March 01, 2024 at 00:00:00 UTC
@@ -527,7 +627,7 @@ contract ExactlyScheduleScript is BaseScript {
         return segments;
     }
 
-    function getSegmentsForUser7() public pure returns (LockupDynamic.Segment[] memory) {
+    function getSegmentsForUser7() public returns (LockupDynamic.Segment[] memory) {
         LockupDynamic.Segment[] memory segments = new LockupDynamic.Segment[](36);
         segments[0] = getSegment({ amount: 235e18, milestone: 1_706_745_600 }); // February 01, 2024 at 00:00:00 UTC
         segments[1] = getSegment({ amount: 262e18, milestone: 1_709_251_200 }); // March 01, 2024 at 00:00:00 UTC
@@ -568,7 +668,7 @@ contract ExactlyScheduleScript is BaseScript {
         return segments;
     }
 
-    function getSegmentsForUser8() public pure returns (LockupDynamic.Segment[] memory) {
+    function getSegmentsForUser8() public returns (LockupDynamic.Segment[] memory) {
         LockupDynamic.Segment[] memory segments = new LockupDynamic.Segment[](36);
         segments[0] = getSegment({ amount: 283e18, milestone: 1_706_745_600 }); // February 01, 2024 at 00:00:00 UTC
         segments[1] = getSegment({ amount: 320e18, milestone: 1_709_251_200 }); // March 01, 2024 at 00:00:00 UTC
@@ -609,7 +709,7 @@ contract ExactlyScheduleScript is BaseScript {
         return segments;
     }
 
-    function getSegmentsForUser9() public pure returns (LockupDynamic.Segment[] memory) {
+    function getSegmentsForUser9() public returns (LockupDynamic.Segment[] memory) {
         LockupDynamic.Segment[] memory segments = new LockupDynamic.Segment[](37);
         segments[0] = getSegment({ amount: 63e18, milestone: 1_714_521_600 }); // May 01, 2024 at 00:00:00 UTC
         segments[1] = getSegment({ amount: 74e18, milestone: 1_717_200_000 }); // June 01, 2024 at 00:00:00 UTC
@@ -651,7 +751,7 @@ contract ExactlyScheduleScript is BaseScript {
         return segments;
     }
 
-    function getSegmentsForUser10() public pure returns (LockupDynamic.Segment[] memory) {
+    function getSegmentsForUser10() public returns (LockupDynamic.Segment[] memory) {
         LockupDynamic.Segment[] memory segments = new LockupDynamic.Segment[](37);
         segments[0] = getSegment({ amount: 32e18, milestone: 1_714_521_600 }); // May 01, 2024 at 00:00:00 UTC
         segments[1] = getSegment({ amount: 37e18, milestone: 1_717_200_000 }); // June 01, 2024 at 00:00:00 UTC
@@ -693,7 +793,7 @@ contract ExactlyScheduleScript is BaseScript {
         return segments;
     }
 
-    function getSegmentsForUser11() public pure returns (LockupDynamic.Segment[] memory) {
+    function getSegmentsForUser11() public returns (LockupDynamic.Segment[] memory) {
         LockupDynamic.Segment[] memory segments = new LockupDynamic.Segment[](36);
         segments[0] = getSegment({ amount: 7790e18, milestone: 1_706_745_600 }); // February 01, 2024 at 00:00:00 UTC
         segments[1] = getSegment({ amount: 8269e18, milestone: 1_709_251_200 }); // March 01, 2024 at 00:00:00 UTC
@@ -734,7 +834,7 @@ contract ExactlyScheduleScript is BaseScript {
         return segments;
     }
 
-    function getSegmentsForUser12() public pure returns (LockupDynamic.Segment[] memory) {
+    function getSegmentsForUser12() public returns (LockupDynamic.Segment[] memory) {
         LockupDynamic.Segment[] memory segments = new LockupDynamic.Segment[](36);
         segments[0] = getSegment({ amount: 31_160e18, milestone: 1_706_745_600 }); // February 01, 2024 at 00:00:00 UTC
         segments[1] = getSegment({ amount: 33_077e18, milestone: 1_709_251_200 }); // March 01, 2024 at 00:00:00 UTC
@@ -775,7 +875,7 @@ contract ExactlyScheduleScript is BaseScript {
         return segments;
     }
 
-    function getSegmentsForUser13() public pure returns (LockupDynamic.Segment[] memory) {
+    function getSegmentsForUser13() public returns (LockupDynamic.Segment[] memory) {
         LockupDynamic.Segment[] memory segments = new LockupDynamic.Segment[](36);
         segments[0] = getSegment({ amount: 807e18, milestone: 1_706_745_600 }); // February 01, 2024 at 00:00:00 UTC
         segments[1] = getSegment({ amount: 858e18, milestone: 1_709_251_200 }); // March 01, 2024 at 00:00:00 UTC
@@ -816,7 +916,7 @@ contract ExactlyScheduleScript is BaseScript {
         return segments;
     }
 
-    function getSegmentsForUser14() public pure returns (LockupDynamic.Segment[] memory) {
+    function getSegmentsForUser14() public returns (LockupDynamic.Segment[] memory) {
         LockupDynamic.Segment[] memory segments = new LockupDynamic.Segment[](36);
         segments[0] = getSegment({ amount: 397e18, milestone: 1_706_745_600 }); // February 01, 2024 at 00:00:00 UTC
         segments[1] = getSegment({ amount: 423e18, milestone: 1_709_251_200 }); // March 01, 2024 at 00:00:00 UTC
@@ -857,7 +957,7 @@ contract ExactlyScheduleScript is BaseScript {
         return segments;
     }
 
-    function getSegmentsForUser15() public pure returns (LockupDynamic.Segment[] memory) {
+    function getSegmentsForUser15() public returns (LockupDynamic.Segment[] memory) {
         LockupDynamic.Segment[] memory segments = new LockupDynamic.Segment[](36);
         segments[0] = getSegment({ amount: 808e18, milestone: 1_706_745_600 }); // February 01, 2024 at 00:00:00 UTC
         segments[1] = getSegment({ amount: 859e18, milestone: 1_709_251_200 }); // March 01, 2024 at 00:00:00 UTC
@@ -898,7 +998,7 @@ contract ExactlyScheduleScript is BaseScript {
         return segments;
     }
 
-    function getSegmentsForUser16() public pure returns (LockupDynamic.Segment[] memory) {
+    function getSegmentsForUser16() public returns (LockupDynamic.Segment[] memory) {
         LockupDynamic.Segment[] memory segments = new LockupDynamic.Segment[](37);
         segments[0] = getSegment({ amount: 68e18, milestone: 1_727_740_800 }); // October 01, 2024 at 00:00:00 UTC
         segments[1] = getSegment({ amount: 80e18, milestone: 1_730_419_200 }); // November 01, 2024 at 00:00:00 UTC
@@ -940,7 +1040,7 @@ contract ExactlyScheduleScript is BaseScript {
         return segments;
     }
 
-    function getSegmentsForUser17() public pure returns (LockupDynamic.Segment[] memory) {
+    function getSegmentsForUser17() public returns (LockupDynamic.Segment[] memory) {
         LockupDynamic.Segment[] memory segments = new LockupDynamic.Segment[](36);
         segments[0] = getSegment({ amount: 5522e18, milestone: 1_706_745_600 }); // February 01, 2024 at 00:00:00 UTC
         segments[1] = getSegment({ amount: 5521e18, milestone: 1_709_251_200 }); // March 01, 2024 at 00:00:00 UTC

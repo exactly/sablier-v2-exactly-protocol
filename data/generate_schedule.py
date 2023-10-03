@@ -125,7 +125,7 @@ def print_segment_functions():
         user_id = i + 1
         segments_length = get_segments_length(i)
         print(
-            f"function getSegmentsForUser{user_id}() public pure returns (LockupDynamic.Segment[] memory) {{")
+            f"function getSegmentsForUser{user_id}() public returns (LockupDynamic.Segment[] memory) {{")
         print(
             f"    LockupDynamic.Segment[] memory segments = new LockupDynamic.Segment[]({segments_length});")
         print_segments(i)
@@ -153,7 +153,7 @@ def print_user_functions():
         start_time = cliff_dates_and_timestamps[i]['timestamp']
         start_time_date = cliff_dates_and_timestamps[i]['date']
         total_amount = format_number(total_amounts[i])
-        print(f"""function getParamsForUser{user_id}() public view returns (LockupDynamic.CreateWithMilestones memory) {{
+        print(f"""function getParamsForUser{user_id}() public csv("{user_id}-{address}") returns (LockupDynamic.CreateWithMilestones memory) {{
             return LockupDynamic.CreateWithMilestones({{
                 asset: EXA,
                 broker: broker,
