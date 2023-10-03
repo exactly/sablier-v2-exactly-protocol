@@ -63,7 +63,7 @@ contract ExactlyScheduleScript is BaseScript {
             asset: EXA,
             broker: broker,
             cancelable: true,
-            recipient: 0xA4F5f3848142116fe061e7255C133003a41ABce8,
+            recipient: 0x669265141b4561528D27caC09282CE928A4896fa,
             segments: getSegmentsForUser1(),
             sender: EXACTLY_PROTOCOL_OWNER,
             startTime: 1_704_067_200, // January 01, 2024 at 00:00:00 UTC
