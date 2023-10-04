@@ -11,11 +11,11 @@ def extract_dates():
 
 
 def extract_recipient_addresses():
-    return schedule_data.iloc[0, 2:19].tolist()
+    return schedule_data.iloc[0, 2:len(schedule_data.columns)].tolist()
 
 
 def extract_cliff_dates():
-    return schedule_data.iloc[1, 2:19].tolist()
+    return schedule_data.iloc[1, 2:len(schedule_data.columns)].tolist()
 
 
 def convert_cliff_dates_to_timestamps():
@@ -45,14 +45,14 @@ def convert_date_format(dates):
 
 
 def extract_total_amounts():
-    amounts = schedule_data.iloc[3, 2:19].map(lambda x: int(x.replace(',', ''))
+    amounts = schedule_data.iloc[3, 2:len(schedule_data.columns)].map(lambda x: int(x.replace(',', ''))
                                               if isinstance(x, str) and x.replace(',', '').strip() != ''
                                               else None)
     return amounts.tolist()
 
 
 def extract_unlock_amounts():
-    amounts = schedule_data.iloc[5:50, 2:19].map(lambda x: int(x.replace(',', ''))
+    amounts = schedule_data.iloc[5:50, 2:len(schedule_data.columns)].map(lambda x: int(x.replace(',', ''))
                                                  if isinstance(x, str) and x.replace(',', '').strip() != ''
                                                  else None)
     return amounts.values.tolist()
@@ -121,7 +121,7 @@ def get_segments_length(index):
 
 
 def print_segment_functions():
-    for i in range(17):
+    for i in range(len(schedule_data.columns) - 2):
         user_id = i + 1
         segments_length = get_segments_length(i)
         print(
@@ -147,7 +147,7 @@ def print_user_functions():
     cliff_dates_and_timestamps = convert_cliff_dates_to_timestamps()
     total_amounts = extract_total_amounts()
 
-    for i in range(17):
+    for i in range(len(schedule_data.columns) - 2):
         user_id = i + 1
         address = addresses[i]
         start_time = cliff_dates_and_timestamps[i]['timestamp']
