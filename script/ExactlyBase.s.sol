@@ -67,7 +67,7 @@ abstract contract ExactlyBaseScript is BaseScript {
                 0,
                 abi.encodeCall(SABLIER_LOCKUP_DYNAMIC.createWithMilestones, (usersParams[i])),
                 0,
-                0,
+                bytes32(i),
                 24 hours
             );
         }
@@ -86,7 +86,7 @@ abstract contract ExactlyBaseScript is BaseScript {
                     0,
                     abi.encodeCall(SABLIER_LOCKUP_DYNAMIC.createWithMilestones, (usersParams[i])),
                     0,
-                    0
+                    bytes32(i)
                 );
             }
         }
