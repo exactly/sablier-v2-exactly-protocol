@@ -7,6 +7,7 @@ import { ud2x18, ud60x18 } from "@sablier/v2-core/src/types/Math.sol";
 import { IERC20 } from "@sablier/v2-core/src/types/Tokens.sol";
 import { BaseScript } from "@sablier/v2-core-script/Base.s.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
+import { TimelockController } from "@openzeppelin/contracts/governance/TimelockController.sol";
 
 contract ExactlyScheduleScript is BaseScript {
     using Strings for uint128;
@@ -16,6 +17,8 @@ contract ExactlyScheduleScript is BaseScript {
     // https://docs.exact.ly/security/access-control
     address public constant EXACTLY_PROTOCOL_OWNER = 0xC0d6Bc5d052d1e74523AD79dD5A954276c9286D3;
     uint128 public constant AGGREGATE_AMOUNT = 2_476_159e18;
+    TimelockController public constant TIMELOCK_CONTROLLER =
+        TimelockController(payable(0x92024C4bDa9DA602b711B9AbB610d072018eb58b));
 
     // Check the addresses in the docs: https://docs.sablier.com/contracts/v2/deployments
     ISablierV2LockupDynamic public constant SABLIER_LOCKUP_DYNAMIC =
@@ -37,6 +40,7 @@ contract ExactlyScheduleScript is BaseScript {
     function setUp() external {
         vm.createSelectFork("optimism", 110_381_818);
         vm.label(address(SABLIER_LOCKUP_DYNAMIC), "SablierV2LockupDynamic");
+        vm.label(address(TIMELOCK_CONTROLLER), "TimelockController");
         vm.label(EXACTLY_PROTOCOL_OWNER, "multisig");
         vm.label(address(EXA), "EXA");
         vm.label(
@@ -46,14 +50,43 @@ contract ExactlyScheduleScript is BaseScript {
         vm.createDir(CSV_DIR, true);
     }
 
-    function run() public virtual broadcast returns (uint256[] memory streamIds) {
+    function run() public virtual broadcast {
         LockupDynamic.CreateWithMilestones[] memory usersParams = getUsersParams();
-        streamIds = new uint256[](usersParams.length);
 
-        EXA.approve(address(SABLIER_LOCKUP_DYNAMIC), AGGREGATE_AMOUNT);
+        // EXA.approve(address(SABLIER_LOCKUP_DYNAMIC), AGGREGATE_AMOUNT);
+        TIMELOCK_CONTROLLER.schedule(
+            address(EXA), 0, abi.encodeCall(EXA.approve, (address(SABLIER_LOCKUP_DYNAMIC), AGGREGATE_AMOUNT)), 0, 0, 24 hours
+        );
 
         for (uint256 i = 0; i < usersParams.length; ++i) {
-            streamIds[i] = SABLIER_LOCKUP_DYNAMIC.createWithMilestones(usersParams[i]);
+            // SABLIER_LOCKUP_DYNAMIC.createWithMilestones(usersParams[i]);
+            TIMELOCK_CONTROLLER.schedule(
+                address(SABLIER_LOCKUP_DYNAMIC),
+                0,
+                abi.encodeCall(SABLIER_LOCKUP_DYNAMIC.createWithMilestones, (usersParams[i])),
+                0,
+                0,
+                24 hours
+            );
+        }
+
+        if (vm.envOr("SIMULATE_EXECUTION", false)) {
+            vm.stopBroadcast();
+            vm.warp(block.timestamp + 24 hours);
+            vm.startBroadcast(EXACTLY_PROTOCOL_OWNER);
+
+            TIMELOCK_CONTROLLER.execute(
+                address(EXA), 0, abi.encodeCall(EXA.approve, (address(SABLIER_LOCKUP_DYNAMIC), AGGREGATE_AMOUNT)), 0, 0
+            );
+            for (uint256 i = 0; i < usersParams.length; ++i) {
+                TIMELOCK_CONTROLLER.execute(
+                    address(SABLIER_LOCKUP_DYNAMIC),
+                    0,
+                    abi.encodeCall(SABLIER_LOCKUP_DYNAMIC.createWithMilestones, (usersParams[i])),
+                    0,
+                    0
+                );
+            }
         }
     }
 
