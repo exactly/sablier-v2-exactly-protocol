@@ -4,6 +4,25 @@ pragma solidity >=0.8.19;
 import { ExactlyBaseScript, LockupDynamic } from "./ExactlyBase.s.sol";
 
 contract ExactlyScheduleScript is ExactlyBaseScript {
+    function run() public override {
+        LockupDynamic.CreateWithMilestones[] memory usersParams = getUsersParams();
+        vm.warp(block.timestamp + 24 hours);
+        vm.startBroadcast(EXACTLY_PROTOCOL_OWNER);
+        TIMELOCK_CONTROLLER.execute(
+            address(EXA), 0, abi.encodeCall(EXA.approve, (address(SABLIER_LOCKUP_DYNAMIC), aggregateAmount())), 0, 0
+        );
+        for (uint256 i = 0; i < usersParams.length; ++i) {
+            TIMELOCK_CONTROLLER.execute(
+                address(SABLIER_LOCKUP_DYNAMIC),
+                0,
+                abi.encodeCall(SABLIER_LOCKUP_DYNAMIC.createWithMilestones, (usersParams[i])),
+                0,
+                0
+            );
+        }
+        vm.stopBroadcast();
+    }
+
     function aggregateAmount() public pure override returns (uint128) {
         return 2_476_159e18;
     }
