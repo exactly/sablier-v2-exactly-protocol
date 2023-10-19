@@ -7,7 +7,7 @@ schedule_data = pd.read_csv('data/exactly_schedule.csv')
 
 
 def extract_dates():
-    return schedule_data.iloc[5:50, 1].tolist()
+    return schedule_data.iloc[5:, 1].tolist()
 
 
 def extract_recipient_addresses():
@@ -45,14 +45,14 @@ def convert_date_format(dates):
 
 
 def extract_total_amounts():
-    amounts = schedule_data.iloc[3, 2:len(schedule_data.columns)].map(lambda x: int(x.replace(',', ''))
+    amounts = schedule_data.iloc[3, 2:].map(lambda x: int(x.replace(',', ''))
                                               if isinstance(x, str) and x.replace(',', '').strip() != ''
                                               else None)
     return amounts.tolist()
 
 
 def extract_unlock_amounts():
-    amounts = schedule_data.iloc[5:50, 2:len(schedule_data.columns)].map(lambda x: int(x.replace(',', ''))
+    amounts = schedule_data.iloc[5:, 2:].map(lambda x: int(x.replace(',', ''))
                                                  if isinstance(x, str) and x.replace(',', '').strip() != ''
                                                  else None)
     return amounts.values.tolist()
