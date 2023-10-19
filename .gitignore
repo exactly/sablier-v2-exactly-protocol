@@ -13,6 +13,7 @@ out
 lcov.info
 yarn.lock
 poetry.lock
+.*-version*
 
 # broadcasts
 !broadcast
