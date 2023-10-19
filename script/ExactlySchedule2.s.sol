@@ -4,6 +4,8 @@ pragma solidity >=0.8.19;
 import { ExactlyBaseScript, LockupDynamic } from "./ExactlyBase.s.sol";
 
 contract ExactlySchedule2Script is ExactlyBaseScript {
+    function run() public override { }
+
     function aggregateAmount() public pure override returns (uint128) {
         return 2_023_841e18;
     }
