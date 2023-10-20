@@ -4,23 +4,32 @@ pragma solidity >=0.8.19;
 import { ExactlyBaseScript, LockupDynamic } from "./ExactlyBase.s.sol";
 
 contract ExactlySchedule3Script is ExactlyBaseScript {
+    uint256 public constant BATCH_SIZE = 13;
+
     function run() public override {
         vm.startBroadcast(EXACTLY_PROTOCOL_OWNER);
         LockupDynamic.CreateWithMilestones[] memory usersParams = getUsersParams();
-        uint256[] memory cancelIds = new uint256[](usersParams.length);
-        for (uint256 i = 0; i < cancelIds.length; ++i) {
-            cancelIds[i] = 10 + i;
+        assert(usersParams.length % BATCH_SIZE == 0);
+
+        uint256[] memory cancelIds = new uint256[](BATCH_SIZE);
+        for (uint256 i = 0; i < usersParams.length; i += BATCH_SIZE) {
+            uint256 batchTotal = 0;
+            for (uint256 j = 0; j < BATCH_SIZE; ++j) {
+                cancelIds[j] = 10 + i + j;
+                uint256 depositedAmount = SABLIER_LOCKUP_DYNAMIC.getDepositedAmount(cancelIds[j]);
+                batchTotal += depositedAmount;
+                assert(depositedAmount == usersParams[i + j].totalAmount);
+                assert(SABLIER_LOCKUP_DYNAMIC.getRecipient(cancelIds[j]) == usersParams[i + j].recipient);
+            }
+            SABLIER_LOCKUP_DYNAMIC.cancelMultiple(cancelIds);
+            assert(EXA.balanceOf(EXACTLY_PROTOCOL_OWNER) == batchTotal);
+
+            EXA.approve(address(SABLIER_LOCKUP_DYNAMIC), batchTotal);
+            for (uint256 j = 0; j < BATCH_SIZE; ++j) {
+                SABLIER_LOCKUP_DYNAMIC.createWithMilestones(usersParams[i + j]);
+            }
+            assert(EXA.balanceOf(EXACTLY_PROTOCOL_OWNER) == 0);
         }
-
-        SABLIER_LOCKUP_DYNAMIC.cancelMultiple(cancelIds);
-
-        assert(EXA.balanceOf(EXACTLY_PROTOCOL_OWNER) == aggregateAmount());
-        EXA.approve(address(SABLIER_LOCKUP_DYNAMIC), aggregateAmount());
-        for (uint256 i = 0; i < usersParams.length; ++i) {
-            SABLIER_LOCKUP_DYNAMIC.createWithMilestones(usersParams[i]);
-        }
-
-        assert(EXA.balanceOf(EXACTLY_PROTOCOL_OWNER) == 0);
         vm.stopBroadcast();
     }
 
