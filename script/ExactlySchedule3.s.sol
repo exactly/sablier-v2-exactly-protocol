@@ -1,35 +1,43 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity >=0.8.19;
 
+import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 import { ExactlyBaseScript, LockupDynamic } from "./ExactlyBase.s.sol";
 
 contract ExactlySchedule3Script is ExactlyBaseScript {
-    uint256 public constant BATCH_SIZE = 13;
-
     function run() public override {
-        vm.startBroadcast(EXACTLY_PROTOCOL_OWNER);
         LockupDynamic.CreateWithMilestones[] memory usersParams = getUsersParams();
-        assert(usersParams.length % BATCH_SIZE == 0);
-
-        uint256[] memory cancelIds = new uint256[](BATCH_SIZE);
-        for (uint256 i = 0; i < usersParams.length; i += BATCH_SIZE) {
-            uint256 batchTotal = 0;
-            for (uint256 j = 0; j < BATCH_SIZE; ++j) {
-                cancelIds[j] = 10 + i + j;
-                uint256 depositedAmount = SABLIER_LOCKUP_DYNAMIC.getDepositedAmount(cancelIds[j]);
-                batchTotal += depositedAmount;
-                assert(depositedAmount == usersParams[i + j].totalAmount);
-                assert(SABLIER_LOCKUP_DYNAMIC.getRecipient(cancelIds[j]) == usersParams[i + j].recipient);
+        for (uint256 i = 0; i < usersParams.length; i += 8) {
+            LockupDynamic.CreateWithMilestones[] memory batchParams =
+                new LockupDynamic.CreateWithMilestones[](Math.min(8, usersParams.length - i));
+            for (uint256 j = 0; j < batchParams.length; ++j) {
+                batchParams[j] = usersParams[i + j];
             }
-            SABLIER_LOCKUP_DYNAMIC.cancelMultiple(cancelIds);
-            assert(EXA.balanceOf(EXACTLY_PROTOCOL_OWNER) == batchTotal);
-
-            EXA.approve(address(SABLIER_LOCKUP_DYNAMIC), batchTotal);
-            for (uint256 j = 0; j < BATCH_SIZE; ++j) {
-                SABLIER_LOCKUP_DYNAMIC.createWithMilestones(usersParams[i + j]);
-            }
-            assert(EXA.balanceOf(EXACTLY_PROTOCOL_OWNER) == 0);
+            this.runBatch(10 + i, batchParams);
         }
+    }
+
+    function runBatch(uint256 firstId, LockupDynamic.CreateWithMilestones[] calldata params) external {
+        vm.startBroadcast(EXACTLY_PROTOCOL_OWNER);
+
+        uint256 total = 0;
+        uint256[] memory cancelIds = new uint256[](params.length);
+        for (uint256 j = 0; j < params.length; ++j) {
+            cancelIds[j] = firstId + j;
+            uint256 depositedAmount = SABLIER_LOCKUP_DYNAMIC.getDepositedAmount(cancelIds[j]);
+            total += depositedAmount;
+            assert(depositedAmount == params[j].totalAmount);
+            assert(SABLIER_LOCKUP_DYNAMIC.getRecipient(cancelIds[j]) == params[j].recipient);
+        }
+        SABLIER_LOCKUP_DYNAMIC.cancelMultiple(cancelIds);
+        assert(EXA.balanceOf(EXACTLY_PROTOCOL_OWNER) == total);
+
+        EXA.approve(address(SABLIER_LOCKUP_DYNAMIC), total);
+        for (uint256 j = 0; j < params.length; ++j) {
+            SABLIER_LOCKUP_DYNAMIC.createWithMilestones(params[j]);
+        }
+        assert(EXA.balanceOf(EXACTLY_PROTOCOL_OWNER) == 0);
+
         vm.stopBroadcast();
     }
 
