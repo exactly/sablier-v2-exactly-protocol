@@ -5,17 +5,7 @@ import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 import { ExactlyBaseScript, LockupDynamic } from "./ExactlyBase.s.sol";
 
 contract ExactlySchedule3Script is ExactlyBaseScript {
-    function run() public override {
-        LockupDynamic.CreateWithMilestones[] memory usersParams = getUsersParams();
-        for (uint256 i = 0; i < usersParams.length; i += 8) {
-            LockupDynamic.CreateWithMilestones[] memory batchParams =
-                new LockupDynamic.CreateWithMilestones[](Math.min(8, usersParams.length - i));
-            for (uint256 j = 0; j < batchParams.length; ++j) {
-                batchParams[j] = usersParams[i + j];
-            }
-            this.runBatch(10 + i, batchParams);
-        }
-    }
+    function run() public override { }
 
     function runBatch(uint256 firstId, LockupDynamic.CreateWithMilestones[] calldata params) external {
         vm.startBroadcast(EXACTLY_PROTOCOL_OWNER);
