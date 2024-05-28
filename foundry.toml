@@ -24,5 +24,4 @@
   wrap_comments = true
 
 [rpc_endpoints]
-  goerli = "https://ethereum-goerli.publicnode.com"
-  optimism = "https://mainnet.optimism.io	"
+  optimism = "${OPTIMISM_RPC_URL}"
