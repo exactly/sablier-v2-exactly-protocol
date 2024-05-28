@@ -37,7 +37,7 @@ abstract contract ExactlyBaseScript is BaseScript {
     }
 
     function setUp() external {
-        vm.createSelectFork("optimism", 119_745_294);
+        vm.createSelectFork("optimism", 120_669_554);
         vm.label(address(SABLIER_LOCKUP_DYNAMIC), "SablierV2LockupDynamic");
         vm.label(address(TIMELOCK_CONTROLLER), "TimelockController");
         vm.label(EXACTLY_PROTOCOL_OWNER, "multisig");
