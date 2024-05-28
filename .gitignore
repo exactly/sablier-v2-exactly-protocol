@@ -4,6 +4,7 @@ node_modules
 out
 *__pycache__
 .mypy_cache
+.vscode
 
 # files
 *.env
