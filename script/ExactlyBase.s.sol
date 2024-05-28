@@ -30,7 +30,7 @@ abstract contract ExactlyBaseScript is BaseScript {
 
     modifier csv(string memory name) {
         _csv = string.concat(CSV_DIR, name, ".csv");
-        try vm.removeFile(_csv) { } catch { }
+        try vm.removeFile(_csv) { } catch { } // solhint-disable-line no-empty-blocks
         vm.writeLine(_csv, "amount,milestone");
         _;
         delete _csv;
